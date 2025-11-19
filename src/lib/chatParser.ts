@@ -6,9 +6,6 @@ export interface ChatMessage {
   isNotification: boolean;
   isEdited?: boolean;   
   isCall?: boolean,
-  callType?: "voice" | "video",
-  callDuration?: number,
-  callDirection?: "incoming" | "outgoing",
   reactions: string
 }
 
