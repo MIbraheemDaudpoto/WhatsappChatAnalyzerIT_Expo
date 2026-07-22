@@ -51,6 +51,7 @@ export const ContactFeedbackSection = () => {
   const [form, setForm] = useState<ContactFormState>(initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const pageVisitStartedAtRef = useRef<number>(Date.now());
 
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
@@ -65,6 +66,25 @@ export const ContactFeedbackSection = () => {
     }
 
     const userAgent = navigator.userAgent;
+    const firstVisitStorageKey = "contactFirstVisitAtUtc";
+    const sessionStorageKey = "contactSessionId";
+    const existingFirstVisit = localStorage.getItem(firstVisitStorageKey);
+    const firstVisitAtUtc = existingFirstVisit || new Date().toISOString();
+    const isReturningVisitor = Boolean(existingFirstVisit);
+    if (!existingFirstVisit) {
+      localStorage.setItem(firstVisitStorageKey, firstVisitAtUtc);
+    }
+
+    let sessionId = sessionStorage.getItem(sessionStorageKey);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(sessionStorageKey, sessionId);
+    }
+
+    const url = new URL(window.location.href);
+    const getUtmParam = (key: string) => url.searchParams.get(key) || undefined;
+    const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const timeOnPageSeconds = Math.max(0, Math.round((Date.now() - pageVisitStartedAtRef.current) / 1000));
 
     return {
       submittedAtLocal: new Date().toLocaleString(),
@@ -77,6 +97,17 @@ export const ContactFeedbackSection = () => {
       referrerUrl: document.referrer || undefined,
       currentPageUrl: window.location.href,
       userAgent,
+      firstVisitAtUtc,
+      isReturningVisitor,
+      sessionId,
+      timeOnPageSeconds,
+      utmSource: getUtmParam("utm_source"),
+      utmMedium: getUtmParam("utm_medium"),
+      utmCampaign: getUtmParam("utm_campaign"),
+      utmTerm: getUtmParam("utm_term"),
+      utmContent: getUtmParam("utm_content"),
+      preferredColorScheme,
+      viewportSize: `${window.innerWidth}x${window.innerHeight}`,
     };
   };
 
