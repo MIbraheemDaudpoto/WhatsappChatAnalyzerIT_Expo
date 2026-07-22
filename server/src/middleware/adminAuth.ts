@@ -1,22 +1,29 @@
+import { timingSafeEqual } from "node:crypto";
 import { Request, Response, NextFunction } from "express";
+import { HttpError } from "../utils/httpError";
 
-export const requireAdminApiKey = (req: Request, res: Response, next: NextFunction) => {
+const isApiKeyMatch = (provided: string, expected: string) => {
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+};
+
+export const requireAdminApiKey = (req: Request, _res: Response, next: NextFunction) => {
   const adminApiKey = process.env.ADMIN_API_KEY;
 
   if (!adminApiKey) {
-    return res.status(500).json({
-      success: false,
-      message: "Admin API key is not configured",
-    });
+    throw new HttpError(500, "Admin API key is not configured", "ADMIN_API_KEY_MISSING");
   }
 
   const providedKey = req.header("x-api-key") ?? "";
 
-  if (providedKey !== adminApiKey) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-    });
+  if (!isApiKeyMatch(providedKey, adminApiKey)) {
+    throw new HttpError(401, "Unauthorized", "ADMIN_UNAUTHORIZED");
   }
 
   next();
