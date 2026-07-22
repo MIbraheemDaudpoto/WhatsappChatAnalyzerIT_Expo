@@ -15,5 +15,11 @@ export default defineConfig({
     port: 3000,        // you can keep any port locally
     open: true,        // optional: opens browser on npm run dev
     host: true,        // allows access from local network if needed
+    proxy: {
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+    },
   },
 });
