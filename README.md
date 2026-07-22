@@ -74,12 +74,11 @@ Returns submissions newest-first.
 Auth:
 
 - Header: `x-api-key: <ADMIN_API_KEY>`
-- or query: `?apiKey=<ADMIN_API_KEY>`
 
 Example:
 
 ```bash
-curl "http://localhost:8787/api/contact?apiKey=YOUR_ADMIN_API_KEY"
+curl -H "x-api-key: YOUR_ADMIN_API_KEY" "http://localhost:8787/api/contact"
 ```
 
 ## Cloudflare Turnstile setup
@@ -108,4 +107,3 @@ If SMTP is not configured, submissions are still stored but email delivery is sk
 - API key protection for admin endpoint
 - No hardcoded secrets
 - Privacy note is shown in UI, explaining what metadata is collected and why
-

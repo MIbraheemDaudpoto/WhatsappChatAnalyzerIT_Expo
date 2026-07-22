@@ -10,7 +10,7 @@ export const requireAdminApiKey = (req: Request, res: Response, next: NextFuncti
     });
   }
 
-  const providedKey = req.header("x-api-key") ?? (typeof req.query.apiKey === "string" ? req.query.apiKey : "");
+  const providedKey = req.header("x-api-key") ?? "";
 
   if (providedKey !== adminApiKey) {
     return res.status(401).json({
