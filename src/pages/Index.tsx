@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { FileUploader } from '@/components/FileUploader';
 import { ChatAnalytics } from '@/components/ChatAnalytics';
+import { ContactFeedbackSection } from '@/components/ContactFeedbackSection';
 import { ParsedChat } from '@/lib/chatParser';
 import { toast } from 'sonner';
 
@@ -69,6 +70,10 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="mt-16 py-6 border-t border-[#d1d1d1]">
+        <div className="container mx-auto px-4">
+          <ContactFeedbackSection />
+        </div>
+
         <div className="bg-[#075E54] text-white shadow-lg rounded-lg p-6">
           <p className="text-center text-xl leading-relaxed mx-auto max-w-2xl">
             <strong>Instant Insights:</strong> Discover who’s texting the most messages, see peak activity times, and uncover hidden patterns in your friends’ conversation history.
@@ -76,7 +81,7 @@ const Index = () => {
         </div>
 
         <div className="container text-center text-sm text-[#667781]">
-          <p>Your chat data is processed locally in your browser. No data is sent to any server.</p>
+          <p>Your WhatsApp chat analysis stays in your browser. Only Contact &amp; Feedback form submissions are sent to the server.</p>
         </div>
       </footer>
     </div>
