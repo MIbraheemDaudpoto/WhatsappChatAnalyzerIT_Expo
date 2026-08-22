@@ -57,6 +57,7 @@ export const ContactFeedbackSection = () => {
   const turnstileWidgetIdRef = useRef<string | null>(null);
 
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
   const remainingChars = MAX_MESSAGE_LENGTH - form.message.length;
 
@@ -189,7 +190,7 @@ export const ContactFeedbackSection = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
