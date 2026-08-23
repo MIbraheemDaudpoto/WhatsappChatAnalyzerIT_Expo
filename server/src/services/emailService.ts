@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import { ContactSubmissionRecord } from "../types/contact";
 
 const optional = (value?: string | number | boolean) => {
@@ -37,18 +36,15 @@ const formatHtmlEmail = (submission: ContactSubmissionRecord, logoUrl: string) =
           <h2 style="margin:4px 0 0;font-size:20px;">New Contact Submission</h2>
         </div>
       </div>
-
       <div style="padding:22px;">
         <div style="border:1px solid #E8EFEA;border-radius:10px;padding:16px;margin-bottom:14px;">
           <h3 style="margin:0 0 10px;color:#0F241F;font-size:16px;">Contact Information</h3>
           <table style="width:100%;border-collapse:collapse;">${row("Name", submission.name)}${row("Email", submission.email)}${row("Subject", submission.subject)}${row("Send Copy", submission.sendCopy ? "Yes" : "No")}</table>
         </div>
-
         <div style="border:1px solid #E8EFEA;border-radius:10px;padding:16px;margin-bottom:14px;">
           <h3 style="margin:0 0 10px;color:#0F241F;font-size:16px;">Message</h3>
           <div style="white-space:pre-wrap;background:#F8FAF9;border:1px solid #E8EFEA;border-radius:8px;padding:12px;color:#1F2937;">${escapeHtml(submission.message)}</div>
         </div>
-
         <div style="border:1px solid #E8EFEA;border-radius:10px;padding:16px;">
           <h3 style="margin:0 0 10px;color:#0F241F;font-size:16px;">Visitor Information</h3>
           <table style="width:100%;border-collapse:collapse;">
@@ -121,62 +117,69 @@ IP Address: ${optional(submission.ipAddress)}
 };
 
 export class EmailService {
-  private readonly transporter;
-  private readonly fromEmail?: string;
+  private readonly apiKey?: string;
+  private readonly fromEmail: string;
   private readonly toEmail?: string;
   private readonly projectLogoUrl: string;
 
   constructor() {
-    const host = process.env.SMTP_HOST;
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASS;
-
-    this.fromEmail = user;
+    this.apiKey = process.env.RESEND_API_KEY;
+    this.fromEmail = process.env.EMAIL_FROM || "WhatsApp Chat Analyzer <beth.t@example.com>";
     this.toEmail = process.env.EMAIL_TO;
     this.projectLogoUrl =
       process.env.PROJECT_LOGO_URL ||
       "https://raw.githubusercontent.com/MIbraheemDaudpoto/WhatsappChatAnalyzerIT_Expo/main/public/favicon.ico";
+  }
 
-    if (!host || !user || !pass || !this.toEmail) {
-      this.transporter = null;
-      return;
+  private async sendEmail(to: string, subject: string, text: string, html: string) {
+    if (!this.apiKey) {
+      throw new Error("RESEND_API_KEY is missing");
     }
 
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: {
-        user,
-        pass,
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        from: this.fromEmail,
+        to: [to],
+        subject,
+        text,
+        html,
+      }),
+      signal: AbortSignal.timeout(15000),
     });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Resend failed (${response.status}): ${errorBody}`);
+    }
   }
 
   async sendNotifications(submission: ContactSubmissionRecord) {
-    if (!this.transporter || !this.fromEmail || !this.toEmail) {
+    if (!this.apiKey || !this.toEmail) {
       return { delivered: false };
     }
 
     const text = formatTextEmail(submission);
     const html = formatHtmlEmail(submission, this.projectLogoUrl);
 
-    await this.transporter.sendMail({
-      from: this.fromEmail,
-      to: this.toEmail,
-      subject: `New Contact Submission: ${submission.subject || "(No Subject)"}`,
+    await this.sendEmail(
+      this.toEmail,
+      `New Contact Submission: ${submission.subject || "(No Subject)"}`,
       text,
       html,
-    });
+    );
 
     if (submission.sendCopy) {
-      await this.transporter.sendMail({
-        from: this.fromEmail,
-        to: submission.email,
-        subject: "We received your message",
-        text: `Thanks for your feedback. A copy of your message is below:\n\n${text}`,
-        html: `
+      try {
+        await this.sendEmail(
+          submission.email,
+          "We received your message",
+          `Thanks for your feedback. A copy of your message is below:\n\n${text}`,
+          `
           <div style="font-family:Inter,Arial,sans-serif;background:#F3F4F6;padding:20px;">
             <div style="max-width:680px;margin:0 auto;background:white;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden;">
               <div style="background:#075E54;color:white;padding:16px 20px;">
@@ -192,7 +195,10 @@ export class EmailService {
             </div>
           </div>
         `,
-      });
+        );
+      } catch {
+        // Visitor copy can fail on Resend test domain; admin email already sent.
+      }
     }
 
     return { delivered: true };
