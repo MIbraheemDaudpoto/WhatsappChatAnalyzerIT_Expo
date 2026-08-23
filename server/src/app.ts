@@ -11,8 +11,9 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 export const createApp = () => {
   const app = express();
+  app.set("trust proxy", 1);
   const dbPath = process.env.CONTACT_DB_PATH || "./data/contact-feedback.db";
-
+  
   app.use(attachRequestContext);
   app.use(helmetMiddleware);
   app.use(compression());
